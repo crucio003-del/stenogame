@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STENO — Learn Shorthand</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&family=DM+Mono:wght@300;400;500&display=swap');
+
+  :root {
+    --ink: #0a0a0a;
+    --paper: #f5f0e8;
+    --aged: #e8e0cc;
+    --tape: #c8b97a;
+    --red: #c0392b;
+    --green: #1a6b3a;
+    --faded: #8a7e6a;
+    --highlight: #f0d060;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Courier Prime', monospace;
+    min-height: 100vh;
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 27px,
+        rgba(0,0,0,0.06) 27px,
+        rgba(0,0,0,0.06) 28px
+      );
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  header {
+    border-bottom: 3px double var(--ink);
+    padding: 18px 32px 12px;
+    display: flex;
+    align-items: baseline;
+    gap: 20px;
+    background: var(--paper);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3rem;
+    letter-spacing: 0.12em;
+    line-height: 1;
+  }
+
+  .logo span {
+    color: var(--red);
+  }
+
+  .tagline {
+    font-size: 0.72rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--faded);
+    border-left: 2px solid var(--faded);
+    padding-left: 16px;
+    line-height: 1.5;
+  }
+
+  .score-strip {
+    margin-left: auto;
+    display: flex;
+    gap: 24px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+  }
+
+  .score-item {
+    text-align: center;
+  }
+
+  .score-item .label {
+    text-transform: uppercase;
+    color: var(--faded);
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    display: block;
+  }
+
+  .score-item .val {
+    font-size: 1.4rem;
+    font-weight: 500;
+  }
+
+  .val.green { color: var(--green); }
+  .val.red { color: var(--red); }
+
+  /* MAIN */
+  main {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 32px 24px 64px;
+  }
+
+  /* MODE TABS */
+  .mode-tabs {
+    display: flex;
+    gap: 0;
+    border: 2px solid var(--ink);
+    width: fit-content;
+    margin-bottom: 32px;
+    overflow: hidden;
+  }
+
+  .tab {
+    padding: 8px 22px;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    border: none;
+    background: var(--paper);
+    color: var(--faded);
+    transition: all 0.15s;
+    border-right: 2px solid var(--ink);
+  }
+
+  .tab:last-child { border-right: none; }
+
+  .tab.active {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .tab:hover:not(.active) {
+    background: var(--aged);
+    color: var(--ink);
+  }
+
+  /* GAME SECTION */
+  #game-section, #reference-section, #quiz-section {
+    display: none;
+  }
+  #game-section.active, #reference-section.active, #quiz-section.active {
+    display: block;
+    animation: fadeUp 0.3s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* FLASHCARD */
+  .card-area {
+    position: relative;
+    margin-bottom: 28px;
+  }
+
+  .category-badge {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--paper);
+    background: var(--ink);
+    padding: 3px 10px;
+    margin-bottom: -2px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .flashcard {
+    border: 2px solid var(--ink);
+    background: white;
+    padding: 40px 48px;
+    position: relative;
+    box-shadow: 5px 5px 0 var(--ink);
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .flashcard::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: -8px;
+    bottom: -8px;
+    border: 1px solid rgba(0,0,0,0.12);
+    z-index: -1;
+  }
+
+  .word-display {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3.5rem;
+    letter-spacing: 0.08em;
+    text-align: center;
+    line-height: 1;
+  }
+
+  .steno-symbol {
+    font-size: 1.8rem;
+    color: var(--faded);
+    font-style: italic;
+    font-family: 'Courier Prime', monospace;
+    text-align: center;
+    letter-spacing: 0.15em;
+  }
+
+  .hint-row {
+    font-size: 0.75rem;
+    color: var(--faded);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* KEYBOARD (steno layout) */
+  .steno-keyboard {
+    border: 2px solid var(--ink);
+    padding: 20px;
+    background: var(--aged);
+    margin-bottom: 24px;
+    position: relative;
+  }
+
+  .steno-keyboard h3 {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--faded);
+    margin-bottom: 14px;
+  }
+
+  .key-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .key-row {
+    display: flex;
+    gap: 5px;
+  }
+
+  .key {
+    width: 42px;
+    height: 42px;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    cursor: default;
+    transition: all 0.1s;
+    position: relative;
+    user-select: none;
+  }
+
+  .key.wide { width: 52px; }
+  .key.star { background: var(--tape); }
+  .key.num { background: var(--ink); color: var(--paper); font-size: 0.7rem; }
+  .key.active {
+    background: var(--ink);
+    color: var(--paper);
+    transform: translateY(2px);
+    box-shadow: none;
+  }
+  .key {
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+
+  /* INPUT */
+  .input-area {
+    display: flex;
+    gap: 0;
+    margin-bottom: 20px;
+    border: 2px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+
+  .steno-input {
+    flex: 1;
+    padding: 14px 20px;
+    font-family: 'Courier Prime', monospace;
+    font-size: 1.1rem;
+    border: none;
+    background: white;
+    outline: none;
+    letter-spacing: 0.1em;
+  }
+
+  .submit-btn {
+    padding: 14px 28px;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .submit-btn:hover { background: #333; }
+
+  /* FEEDBACK */
+  .feedback {
+    height: 36px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+    padding: 0 4px;
+    transition: all 0.2s;
+  }
+
+  .feedback.correct { color: var(--green); }
+  .feedback.wrong { color: var(--red); }
+
+  .feedback-icon {
+    font-size: 1.2rem;
+  }
+
+  /* CONTROLS */
+  .controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 32px;
+  }
+
+  .btn {
+    padding: 8px 20px;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+
+  .btn:hover {
+    background: var(--ink);
+    color: var(--paper);
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px 0 var(--ink);
+  }
+
+  .btn.danger { border-color: var(--red); color: var(--red); }
+  .btn.danger:hover { background: var(--red); color: white; }
+
+  /* SHOW/HIDE ANSWER */
+  .reveal-btn {
+    font-size: 0.7rem;
+    color: var(--faded);
+    cursor: pointer;
+    text-decoration: underline;
+    font-family: 'Courier Prime', monospace;
+    background: none;
+    border: none;
+    letter-spacing: 0.05em;
+  }
+
+  .reveal-btn:hover { color: var(--ink); }
+
+  /* PROGRESS BAR */
+  .progress-bar {
+    height: 6px;
+    background: var(--aged);
+    border: 1px solid var(--ink);
+    margin-bottom: 28px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--ink);
+    transition: width 0.4s ease;
+  }
+
+  /* ── REFERENCE TABLE ── */
+  .ref-intro {
+    font-size: 0.82rem;
+    color: var(--faded);
+    letter-spacing: 0.05em;
+    margin-bottom: 24px;
+    line-height: 1.7;
+    border-left: 3px solid var(--tape);
+    padding-left: 16px;
+  }
+
+  .ref-section {
+    margin-bottom: 32px;
+  }
+
+  .ref-section h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    letter-spacing: 0.1em;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 4px;
+    margin-bottom: 14px;
+  }
+
+  .ref-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+  }
+
+  .ref-card {
+    border: 1px solid var(--ink);
+    padding: 10px 14px;
+    background: white;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+
+  .ref-card:hover {
+    background: var(--highlight);
+    transform: translate(-1px, -1px);
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+
+  .ref-symbol {
+    font-style: italic;
+    font-size: 1.1rem;
+    color: var(--red);
+    min-width: 50px;
+    font-family: 'Courier Prime', monospace;
+    letter-spacing: 0.1em;
+  }
+
+  .ref-word {
+    font-size: 0.82rem;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── QUIZ MODE ── */
+  .quiz-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .quiz-option {
+    border: 2px solid var(--ink);
+    padding: 18px 24px;
+    background: white;
+    cursor: pointer;
+    font-family: 'Courier Prime', monospace;
+    font-size: 0.95rem;
+    letter-spacing: 0.08em;
+    text-align: center;
+    transition: all 0.15s;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+
+  .quiz-option:hover:not(.disabled) {
+    background: var(--aged);
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+
+  .quiz-option.correct-ans {
+    background: #d4edda;
+    border-color: var(--green);
+    box-shadow: 3px 3px 0 var(--green);
+  }
+
+  .quiz-option.wrong-ans {
+    background: #f8d7da;
+    border-color: var(--red);
+    box-shadow: 3px 3px 0 var(--red);
+  }
+
+  .quiz-option.disabled { cursor: default; }
+
+  /* EXPLANATION BOX */
+  .explanation-box {
+    border: 2px solid var(--ink);
+    border-left: 5px solid var(--red);
+    background: white;
+    padding: 14px 18px;
+    margin-top: 12px;
+    display: none;
+    animation: fadeUp 0.25s ease;
+  }
+
+  .explanation-box.show { display: block; }
+
+  .explanation-box .exp-header {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--faded);
+    margin-bottom: 6px;
+  }
+
+  .explanation-box .exp-body {
+    font-size: 0.85rem;
+    line-height: 1.7;
+    letter-spacing: 0.02em;
+  }
+
+  .explanation-box .exp-body em {
+    font-style: normal;
+    font-weight: 700;
+    color: var(--red);
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.08em;
+  }
+
+  /* streak */
+  .streak-badge {
+    display: inline-block;
+    background: var(--highlight);
+    border: 2px solid var(--ink);
+    padding: 2px 10px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    margin-left: 10px;
+  }
+
+  /* DECORATIVE corner tape */
+  .tape-top {
+    position: absolute;
+    top: -10px;
+    right: 30px;
+    width: 60px;
+    height: 20px;
+    background: var(--tape);
+    opacity: 0.7;
+    transform: rotate(-2deg);
+  }
+
+  /* TYPEWRITER blink */
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  .cursor {
+    display: inline-block;
+    width: 10px;
+    height: 1.2em;
+    background: var(--ink);
+    animation: blink 1s infinite;
+    vertical-align: middle;
+    margin-left: 2px;
+  }
+
+  /* Stamp */
+  .stamp {
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+    width: 70px;
+    height: 70px;
+    border: 3px solid var(--red);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    color: var(--red);
+    opacity: 0;
+    transform: rotate(-12deg);
+    transition: opacity 0.3s;
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  .stamp.show { opacity: 0.7; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">STE<span>N</span>O</div>
+  </div>
+  <div class="tagline">
+    Shorthand Training System<br>
+    for Stenography Students
+  </div>
+  <div class="score-strip">
+    <div class="score-item">
+      <span class="label">Correct</span>
+      <span class="val green" id="score-correct">0</span>
+    </div>
+    <div class="score-item">
+      <span class="label">Wrong</span>
+      <span class="val red" id="score-wrong">0</span>
+    </div>
+    <div class="score-item">
+      <span class="label">Streak</span>
+      <span class="val" id="score-streak">0</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="mode-tabs">
+    <button class="tab active" onclick="setMode('game')">✦ Flashcards</button>
+    <button class="tab" onclick="setMode('quiz')">⊞ Multiple Choice</button>
+    <button class="tab" onclick="setMode('reference')">☰ Reference</button>
+  </div>
+
+  <!-- FLASHCARD MODE -->
+  <div id="game-section" class="active">
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+
+    <div class="card-area">
+      <div class="category-badge" id="category-badge">BRIEF</div>
+      <div class="flashcard">
+        <div class="tape-top"></div>
+        <div class="word-display" id="word-display">THE</div>
+        <div class="steno-symbol" id="steno-symbol">-T</div>
+        <div class="hint-row" id="hint-text">Type the steno outline below</div>
+        <div class="stamp" id="correct-stamp">CORRECT!</div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <input class="steno-input" id="steno-input" type="text"
+        placeholder="Type the steno chord (e.g. -T)"
+        autocomplete="off" autocorrect="off" spellcheck="false"
+        onkeydown="handleKey(event)" />
+      <button class="submit-btn" onclick="checkAnswer()">CHECK →</button>
+    </div>
+
+    <div class="feedback" id="feedback"></div>
+
+    <div class="controls">
+      <button class="btn" onclick="nextCard()">Skip →</button>
+      <button class="btn" onclick="toggleReveal()">Reveal Answer</button>
+      <button class="btn" onclick="shuffleDeck()">⟳ Shuffle</button>
+      <button class="btn" id="category-toggle" onclick="cycleCategory()">Category: All</button>
+      <button class="btn danger" onclick="resetScore()">Reset Score</button>
+    </div>
+
+    <div class="steno-keyboard">
+      <h3>Steno Keyboard Layout</h3>
+      <div class="key-rows">
+        <div class="key-row">
+          <div class="key num" style="width:180px;font-size:0.6rem;">NUMBER BAR</div>
+        </div>
+        <div class="key-row">
+          <div class="key" data-key="S-">S</div>
+          <div class="key" data-key="T-">T</div>
+          <div class="key" data-key="K-">K</div>
+          <div class="key" data-key="P-">P</div>
+          <div class="key" data-key="W-">W</div>
+          <div class="key star" data-key="*">✦</div>
+          <div class="key" data-key="-F">F</div>
+          <div class="key" data-key="-P">P</div>
+          <div class="key" data-key="-L">L</div>
+          <div class="key" data-key="-T">T</div>
+          <div class="key" data-key="-D">D</div>
+        </div>
+        <div class="key-row">
+          <div class="key" data-key="S-">S</div>
+          <div class="key" data-key="H-">H</div>
+          <div class="key" data-key="R-">R</div>
+          <div class="key" data-key="W-" style="opacity:0.3">·</div>
+          <div class="key" data-key="H-" style="opacity:0.3">·</div>
+          <div class="key star" data-key="*">✦</div>
+          <div class="key" data-key="-R">R</div>
+          <div class="key" data-key="-B">B</div>
+          <div class="key" data-key="-G">G</div>
+          <div class="key" data-key="-S">S</div>
+          <div class="key" data-key="-Z">Z</div>
+        </div>
+        <div class="key-row" style="margin-top:4px;">
+          <div class="key wide" data-key="A-">A</div>
+          <div class="key wide" data-key="O-">O</div>
+          <div style="width:24px"></div>
+          <div class="key wide" data-key="-E">E</div>
+          <div class="key wide" data-key="-U">U</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MULTIPLE CHOICE MODE -->
+  <div id="quiz-section">
+    <div class="progress-bar">
+      <div class="progress-fill" id="quiz-progress-fill" style="width:0%"></div>
+    </div>
+    <div class="card-area">
+      <div class="category-badge" id="quiz-category-badge">BRIEF</div>
+      <div class="flashcard">
+        <div class="tape-top"></div>
+        <div class="word-display" id="quiz-word-display">THE</div>
+        <div class="hint-row">Which steno outline writes this word?</div>
+      </div>
+    </div>
+    <div class="quiz-grid" id="quiz-options"></div>
+    <div class="feedback" id="quiz-feedback" style="margin-top:16px;"></div>
+    <div class="explanation-box" id="quiz-explanation">
+      <div class="exp-header">Why this outline?</div>
+      <div class="exp-body" id="quiz-explanation-text"></div>
+    </div>
+    <div class="controls" style="margin-top:20px;">
+      <button class="btn" onclick="nextQuiz()">Next →</button>
+      <button class="btn danger" onclick="resetScore()">Reset Score</button>
+    </div>
+  </div>
+
+  <!-- REFERENCE MODE -->
+  <div id="reference-section">
+    <p class="ref-intro">
+      Steno uses a special keyboard where both hands press keys simultaneously to write entire words or syllables in one stroke. Each "chord" maps to a word or sound. The layout is phonetic — left side = beginning of word, vowels in middle, right side = end.
+    </p>
+    <div id="ref-content"></div>
+  </div>
+</main>
+
+<script>
+// ── DATA: Steno briefs ──────────────────────────────────────────
+const CARDS = [
+  // High-frequency briefs
+  { word: "THE",        outline: "-T",       cat: "Brief",    explanation: "<em>-T</em> is a right-hand brief — the dash means the T key on the right side of the board. It's the most common word in English, so it gets the fastest, simplest stroke." },
+  { word: "AND",        outline: "SKP",      cat: "Brief",    explanation: "<em>SKP</em> uses three left-hand keys in one simultaneous chord. It's a purely arbitrary brief chosen for speed — memorize it as a unit." },
+  { word: "A",          outline: "AEU",      cat: "Brief",    explanation: "<em>AEU</em> combines the A, E, and U vowel keys. In steno, pressing multiple vowels together creates the long-A sound, which matches how 'a' (the article) is pronounced." },
+  { word: "THAT",       outline: "THA",      cat: "Brief",    explanation: "<em>THA</em> captures the phonetic sound of 'that': TH on the left for the 'th' sound + A vowel. It's a phonetic stroke." },
+  { word: "IT",         outline: "T",        cat: "Brief",    explanation: "<em>T</em> alone is a super-short brief for one of the most common words. Single-key briefs are reserved for the highest-frequency words." },
+  { word: "IS",         outline: "S",        cat: "Brief",    explanation: "<em>S</em> alone writes 'is'. Like <em>T</em> for 'it', the single left-hand S key is given to this extremely common verb." },
+  { word: "IN",         outline: "TPH",      cat: "Brief",    explanation: "<em>TPH</em> is the steno representation of the letter N sound (the left-hand N chord). 'In' starts and ends with N phonetically, making this a natural fit." },
+  { word: "TO",         outline: "TO",       cat: "Brief",    explanation: "<em>TO</em> uses the T key + O vowel, spelling out 'to' phonetically. Left-hand T plus the O vowel in the middle row." },
+  { word: "OF",         outline: "-F",       cat: "Brief",    explanation: "<em>-F</em> is the right-hand F key (note the dash). 'Of' ends with an F sound, so this right-side key captures the word's final consonant as a brief." },
+  { word: "YOU",        outline: "U",        cat: "Brief",    explanation: "<em>U</em> alone writes 'you' — the vowel key that sounds like the word itself. Single-vowel briefs are reserved for the most frequent words." },
+  { word: "WAS",        outline: "WAS",      cat: "Brief",    explanation: "<em>WAS</em> is a phonetic stroke: W key + A vowel + S key. It spells out the word's sounds directly on the steno board." },
+  { word: "FOR",        outline: "TP-R",     cat: "Brief",    explanation: "<em>TP-R</em> uses the left-hand F sound (TP) and right-hand R. The 'for' sound is F + R with no vowel needed, making this a compact brief." },
+  { word: "ARE",        outline: "R",        cat: "Brief",    explanation: "<em>R</em> alone writes 'are'. It's the initial sound of the word, and as a single-key brief it reflects how frequently 'are' appears in speech." },
+  { word: "BE",         outline: "-B",       cat: "Brief",    explanation: "<em>-B</em> is the right-hand B key. 'Be' ends with a B sound, so this right-side key serves as the brief for this extremely common verb." },
+  { word: "HE",         outline: "HE",       cat: "Brief",    explanation: "<em>HE</em> uses the left-hand H key + E vowel. It phonetically spells the word exactly as it sounds — H + long E." },
+  { word: "SHE",        outline: "SHE",      cat: "Brief",    explanation: "<em>SHE</em> uses the SH chord (S+H keys together on the left) + E vowel. Left-hand SH is the steno convention for the 'sh' sound." },
+  { word: "WE",         outline: "WE",       cat: "Brief",    explanation: "<em>WE</em> uses W key + E vowel — a direct phonetic spelling of the word on the steno board." },
+  { word: "THEY",       outline: "THE",      cat: "Brief",    explanation: "<em>THE</em> chord (TH + E vowel) sounds like the beginning of 'they'. The context distinguishes it from 'the', which uses only <em>-T</em>." },
+  { word: "WITH",       outline: "W",        cat: "Brief",    explanation: "<em>W</em> alone is a brief for 'with'. Single-key briefs are given only to the most common words, and 'with' qualifies easily." },
+  { word: "AS",         outline: "AZ",       cat: "Brief",    explanation: "<em>AZ</em> phonetically spells 'as' — the A vowel plus the Z key (right-hand -Z), capturing the soft-S/Z sound at the end of the word." },
+  { word: "NOT",        outline: "TPHOT",    cat: "Brief",    explanation: "<em>TPHOT</em> = N (TPH) + O vowel + T (right-hand -T). It spells 'not' phonetically: N-O-T using steno letter representations." },
+  { word: "CAN",        outline: "K",        cat: "Brief",    explanation: "<em>K</em> alone is the brief for 'can'. The K key starts the word, and its high frequency earns it this single-key shortcut." },
+  { word: "HAVE",       outline: "SR",       cat: "Brief",    explanation: "<em>SR</em> is an arbitrary brief for 'have'. Left-hand S and R pressed together — no phonetic logic, pure memorization for speed." },
+  { word: "HAD",        outline: "H",        cat: "Brief",    explanation: "<em>H</em> alone writes 'had'. The initial H key is enough for this common past tense verb." },
+  { word: "WILL",       outline: "HR",       cat: "Brief",    explanation: "<em>HR</em> is the left-hand L chord (H+R together = L sound in steno). 'Will' starts with W-L sounds, compressed to HR." },
+  { word: "WOULD",      outline: "WO",       cat: "Brief",    explanation: "<em>WO</em> uses W key + O vowel, capturing the 'woo' sound at the start of 'would'. Briefs often grab just the beginning sound." },
+  { word: "COULD",      outline: "KO",       cat: "Brief",    explanation: "<em>KO</em> mirrors the pattern of WO (would): K key + O vowel for the 'coo' sound beginning 'could'." },
+  { word: "SHOULD",     outline: "SHO",      cat: "Brief",    explanation: "<em>SHO</em> = SH chord + O vowel. Matches the pattern of WO/KO: the opening syllable 'shoo' of 'should'. Consistent patterns make briefs easier to learn." },
+  { word: "DO",         outline: "TKO",      cat: "Brief",    explanation: "<em>TKO</em> = TK (the steno D chord, left hand) + O vowel. Left-hand TK always represents the D sound in steno." },
+  { word: "DID",        outline: "TK",       cat: "Brief",    explanation: "<em>TK</em> is the left-hand D chord. 'Did' = D alone as a super-short brief, since it's one of the most common past-tense verbs." },
+  // Legal
+  { word: "COURT",      outline: "KORT",     cat: "Legal",    explanation: "<em>KORT</em> phonetically renders 'court': K + O vowel + R + T (-T on the right). Legal steno often uses near-phonetic outlines for precision." },
+  { word: "JUDGE",      outline: "SKWRUPBLG",cat: "Legal",    explanation: "<em>SKWRUPBLG</em> is the standard steno chord for the 'J' sound (SKW on the left) + UPB + LG on the right. Long but pressed simultaneously — one stroke." },
+  { word: "WITNESS",    outline: "W-S",      cat: "Legal",    explanation: "<em>W-S</em> uses the W key + right-hand S, skipping the middle vowels. The dash means skip the vowels; it's a compressed brief for this frequent legal word." },
+  { word: "ATTORNEY",   outline: "TOERN",    cat: "Legal",    explanation: "<em>TOERN</em> captures 'attorney' phonetically: T + O + ER sound + N. The ER vowel cluster (OE) is standard steno for the 'ur' sound." },
+  { word: "EXHIBIT",    outline: "SKEBT",    cat: "Legal",    explanation: "<em>SKEBT</em> compresses 'exhibit': SK for the ex- prefix + EBT for -hibit. Legal briefs often compress multi-syllable words into one chord." },
+  { word: "OBJECTION",  outline: "OBJ",      cat: "Legal",    explanation: "<em>OBJ</em> is an intuitive abbreviation — O + BJ chord. Court reporters write this constantly, so it's kept extremely short." },
+  { word: "MOTION",     outline: "PHOEGS",   cat: "Legal",    explanation: "<em>PHOEGS</em> = PH (M sound) + OE vowel + GS (-tion suffix). In steno, -GS on the right hand writes the '-tion' ending." },
+  { word: "DEPOSITION", outline: "TKEGS",    cat: "Legal",    explanation: "<em>TKEGS</em> = TK (D sound) + E vowel + GS (-tion). 'Deposition' compressed to its D + -tion skeleton. The -GS chord consistently writes '-tion'." },
+  { word: "DEFENDANT",  outline: "TKEPBT",   cat: "Legal",    explanation: "<em>TKEPBT</em> = TK (D) + E + PBT (-ndt). This captures 'defend-' with the right-hand NT cluster. A one-stroke brief for a word said hundreds of times per trial." },
+  { word: "PLAINTIFF",  outline: "PHREUFP",  cat: "Legal",    explanation: "<em>PHREUFP</em> = PH (P sound) + HR (L) + EU + FP. Left-hand PH = P, HR = L, giving PL- + -iff on the right. One chord for a six-syllable concept." },
+  // Phonetic
+  { word: "CHAIR",      outline: "KHAIR",    cat: "Phonetic", explanation: "<em>KHAIR</em> is fully phonetic: KH = the 'ch' sound (K+H together on the left) + A vowel + IR sound (-R on right). Steno spells sounds, not letters." },
+  { word: "THINK",      outline: "THIG",     cat: "Phonetic", explanation: "<em>THIG</em> = TH chord + I vowel + G (-G on right). The -G key alone can represent the 'nk' ending in steno — another case where sounds, not spellings, matter." },
+  { word: "THROUGH",    outline: "THRU",     cat: "Phonetic", explanation: "<em>THRU</em> = TH + R + U. Purely phonetic — spells the pronunciation 'throo'. Steno ignores the silent 'ough' spelling entirely." },
+  { word: "PHONE",      outline: "TPOEN",    cat: "Phonetic", explanation: "<em>TPOEN</em> = TP (F sound) + OE vowel + N. Left-hand TP always = F in steno. So TPOEN = F + long-O + N = 'fone'. Spelling is irrelevant; sounds rule." },
+  { word: "KNEEL",      outline: "TPHAOELT", cat: "Phonetic", explanation: "<em>TPHAOELT</em> = TPH (N) + AOEU vowel cluster (long E) + LT. The AOEU cluster = long vowel sounds. This outlines the phonetic N + EE + L + T of 'kneel'." },
+  { word: "SCHOOL",     outline: "SKAOL",    cat: "Phonetic", explanation: "<em>SKAOL</em> = SK + AOL. Left-hand SK = 'sk' sound, AOL = long-OO vowel cluster. Phonetically writes 'skool', ignoring the 'ch' spelling." },
+  { word: "QUITE",      outline: "KWAOEUT",  cat: "Phonetic", explanation: "<em>KWAOEUT</em> = KW + AOEU + T. KW on the left = 'kw' (qu-) sound. AOEU = long-I vowel cluster. Right-T closes it. Sounds like 'kwite'." },
+  { word: "PEOPLE",     outline: "PAOEPL",   cat: "Phonetic", explanation: "<em>PAOEPL</em> = P + AOEU (long-E cluster) + PL (-ple ending). The right-hand PL chord writes '-ple' sounds. Phonetically: P + EE + PL." },
+  { word: "ABOUT",      outline: "PW",       cat: "Brief",    explanation: "<em>PW</em> is an arbitrary brief — two left-hand keys for a common two-syllable word. No phonetic logic; memorize PW = about." },
+  { word: "BECAUSE",    outline: "PWAUS",    cat: "Brief",    explanation: "<em>PWAUS</em> extends the PW (ab-) pattern + AUS. Think: PW (because starts like 'ab') + AU vowel + S. A semi-phonetic brief." },
+  { word: "BETWEEN",    outline: "TWAOE",    cat: "Brief",    explanation: "<em>TWAOE</em> = T + W + AOE (long-E). Captures the 'tw' onset of 'between' + a long-E vowel. The ending is dropped — briefs truncate." },
+  { word: "BEFORE",     outline: "PW-FR",    cat: "Brief",    explanation: "<em>PW-FR</em> = PW (be-) + FR (-fore). Left PW for the 'be-' prefix, right-hand FR for '-fore'. The dash skips the vowel row." },
+  { word: "AFTER",      outline: "AFT",      cat: "Brief",    explanation: "<em>AFT</em> = A vowel + F + T (-T right hand). Phonetically spells 'aft' — the stressed syllable of 'after'. The unstressed '-er' is dropped." },
+  { word: "ALSO",       outline: "ALS",      cat: "Brief",    explanation: "<em>ALS</em> = A + L + S. Captures the first syllable 'al-' plus the S ending. A truncated phonetic brief." },
+  { word: "JUST",       outline: "SKWRUFT",  cat: "Brief",    explanation: "<em>SKWRUFT</em> = SKWR (J sound) + U + FT. Left-hand SKWR = J. Then U vowel + -FT (the '-ust' ending). Phonetically: J + U + ST." },
+  { word: "KNOW",       outline: "TPHOE",    cat: "Phonetic", explanation: "<em>TPHOE</em> = TPH (N) + OE (long-O). Steno ignores the silent K entirely — it spells the sound 'no'. Phonetic writing means only sounds matter." },
+  { word: "LIKE",       outline: "HRAOEUBG", cat: "Phonetic", explanation: "<em>HRAOEUBG</em> = HR (L) + AOEU (long-I) + BG (-k sound). Left HR = L, AOEU vowel cluster = long-I, right -BG = K. Phonetically: L + I + K." },
+  { word: "SOME",       outline: "SOPL",     cat: "Brief",    explanation: "<em>SOPL</em> = S + O + PL. Right-hand -PL can write an M sound in steno. So SOPL = S + O + M = 'som'. A phonetic brief using steno's PL=M convention." },
+  { word: "MORE",       outline: "PHOR",     cat: "Brief",    explanation: "<em>PHOR</em> = PH (M sound) + O + R. Left-hand PH = M in steno. So PHOR = M + O + R = 'mor'. Phonetic once you know PH always means M." },
+];
+
+// ── STATE ──────────────────────────────────────────────────────
+let deck = [...CARDS];
+let currentIndex = 0;
+let revealed = false;
+let correct = 0, wrong = 0, streak = 0;
+let currentMode = 'game';
+let currentCategory = 'All';
+let categories = ['All', ...new Set(CARDS.map(c => c.cat))];
+let catIndex = 0;
+
+// Quiz state
+let quizIndex = 0;
+let quizDeck = [];
+let quizAnswered = false;
+
+// ── HELPERS ───────────────────────────────────────────────────
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function getFilteredDeck() {
+  if (currentCategory === 'All') return [...CARDS];
+  return CARDS.filter(c => c.cat === currentCategory);
+}
+
+function updateScoreUI() {
+  document.getElementById('score-correct').textContent = correct;
+  document.getElementById('score-wrong').textContent = wrong;
+  const streakEl = document.getElementById('score-streak');
+  streakEl.textContent = streak;
+  streakEl.style.color = streak >= 5 ? 'var(--red)' : 'var(--ink)';
+}
+
+function highlightKeys(outline) {
+  document.querySelectorAll('.key').forEach(k => k.classList.remove('active'));
+  const tokens = outline.toUpperCase().split('');
+  tokens.forEach(t => {
+    document.querySelectorAll(`[data-key]`).forEach(k => {
+      const kk = k.getAttribute('data-key').toUpperCase().replace('-','');
+      if (kk === t) k.classList.add('active');
+    });
+  });
+}
+
+// ── GAME MODE ─────────────────────────────────────────────────
+function loadCard() {
+  const card = deck[currentIndex];
+  document.getElementById('word-display').textContent = card.word;
+  document.getElementById('steno-symbol').textContent = '?';
+  document.getElementById('category-badge').textContent = card.cat.toUpperCase();
+  document.getElementById('hint-text').textContent = 'Type the steno outline below';
+  document.getElementById('steno-input').value = '';
+  document.getElementById('steno-input').focus();
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('correct-stamp').classList.remove('show');
+  revealed = false;
+  updateProgress();
+  highlightKeys('');
+}
+
+function updateProgress() {
+  const pct = ((currentIndex + 1) / deck.length) * 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+function checkAnswer() {
+  const input = document.getElementById('steno-input').value.trim().toUpperCase();
+  const card = deck[currentIndex];
+  const answer = card.outline.toUpperCase();
+  const fb = document.getElementById('feedback');
+  const stamp = document.getElementById('correct-stamp');
+
+  if (!input) return;
+
+  if (input === answer) {
+    correct++;
+    streak++;
+    fb.className = 'feedback correct';
+    fb.innerHTML = `<span class="feedback-icon">✓</span> Correct! <em>${card.outline}</em> = ${card.word}`;
+    stamp.classList.add('show');
+    document.getElementById('steno-symbol').textContent = card.outline;
+    highlightKeys(card.outline);
+    updateScoreUI();
+    setTimeout(() => nextCard(), 1200);
+  } else {
+    wrong++;
+    streak = 0;
+    fb.className = 'feedback wrong';
+    fb.innerHTML = `<span class="feedback-icon">✗</span> Not quite. You typed: <em>${input}</em> — Try again or reveal.`;
+    document.getElementById('steno-input').value = '';
+    document.getElementById('steno-input').focus();
+    updateScoreUI();
+  }
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter') checkAnswer();
+}
+
+function nextCard() {
+  currentIndex = (currentIndex + 1) % deck.length;
+  loadCard();
+}
+
+function toggleReveal() {
+  const card = deck[currentIndex];
+  const sym = document.getElementById('steno-symbol');
+  if (!revealed) {
+    sym.textContent = card.outline;
+    highlightKeys(card.outline);
+    revealed = true;
+  } else {
+    sym.textContent = '?';
+    highlightKeys('');
+    revealed = false;
+  }
+}
+
+function shuffleDeck() {
+  deck = shuffle(getFilteredDeck());
+  currentIndex = 0;
+  loadCard();
+}
+
+function cycleCategory() {
+  catIndex = (catIndex + 1) % categories.length;
+  currentCategory = categories[catIndex];
+  document.getElementById('category-toggle').textContent = `Category: ${currentCategory}`;
+  deck = shuffle(getFilteredDeck());
+  currentIndex = 0;
+  loadCard();
+}
+
+function resetScore() {
+  correct = 0; wrong = 0; streak = 0;
+  updateScoreUI();
+}
+
+// ── QUIZ MODE ──────────────────────────────────────────────────
+function loadQuiz() {
+  quizDeck = shuffle(CARDS);
+  quizIndex = 0;
+  renderQuiz();
+}
+
+function renderQuiz() {
+  quizAnswered = false;
+  const card = quizDeck[quizIndex];
+  document.getElementById('quiz-word-display').textContent = card.word;
+  document.getElementById('quiz-category-badge').textContent = card.cat.toUpperCase();
+  document.getElementById('quiz-feedback').textContent = '';
+  document.getElementById('quiz-feedback').className = 'feedback';
+
+  const pct = ((quizIndex + 1) / quizDeck.length) * 100;
+  document.getElementById('quiz-progress-fill').style.width = pct + '%';
+
+  // Generate 4 options: 1 correct + 3 random
+  const others = shuffle(CARDS.filter(c => c.outline !== card.outline)).slice(0, 3);
+  const options = shuffle([card, ...others]);
+
+  document.getElementById('quiz-explanation').classList.remove('show');
+  document.getElementById('quiz-explanation-text').innerHTML = '';
+
+  const grid = document.getElementById('quiz-options');
+  grid.innerHTML = '';
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'quiz-option';
+    btn.textContent = opt.outline;
+    btn.onclick = () => selectQuizAnswer(opt.outline, card, btn);
+    grid.appendChild(btn);
+  });
+}
+
+function selectQuizAnswer(selected, card, btn) {
+  if (quizAnswered) return;
+  quizAnswered = true;
+
+  const correct_ans = card.outline;
+  const fb = document.getElementById('quiz-feedback');
+  const expBox = document.getElementById('quiz-explanation');
+  const expText = document.getElementById('quiz-explanation-text');
+  const opts = document.querySelectorAll('.quiz-option');
+  opts.forEach(o => {
+    o.classList.add('disabled');
+    if (o.textContent === correct_ans) o.classList.add('correct-ans');
+  });
+
+  if (selected === correct_ans) {
+    correct++;
+    streak++;
+    btn.classList.add('correct-ans');
+    fb.className = 'feedback correct';
+    fb.innerHTML = `<span class="feedback-icon">✓</span> Correct! <em>${correct_ans}</em> = ${card.word}`;
+  } else {
+    wrong++;
+    streak = 0;
+    btn.classList.add('wrong-ans');
+    fb.className = 'feedback wrong';
+    fb.innerHTML = `<span class="feedback-icon">✗</span> You chose <em>${selected}</em> — the correct outline is <em>${correct_ans}</em>`;
+    expBox.classList.add('show');
+    expText.innerHTML = card.explanation || `<em>${correct_ans}</em> is the correct steno outline for "${card.word}".`;
+  }
+  updateScoreUI();
+}
+
+function nextQuiz() {
+  if (!quizAnswered) {
+    quizIndex = (quizIndex + 1) % quizDeck.length;
+  } else {
+    quizIndex = (quizIndex + 1) % quizDeck.length;
+  }
+  renderQuiz();
+}
+
+// ── REFERENCE MODE ────────────────────────────────────────────
+function buildReference() {
+  const cats = [...new Set(CARDS.map(c => c.cat))];
+  const container = document.getElementById('ref-content');
+  container.innerHTML = '';
+  cats.forEach(cat => {
+    const sec = document.createElement('div');
+    sec.className = 'ref-section';
+    sec.innerHTML = `<h2>${cat} Outlines</h2>`;
+    const grid = document.createElement('div');
+    grid.className = 'ref-grid';
+    CARDS.filter(c => c.cat === cat).forEach(card => {
+      const div = document.createElement('div');
+      div.className = 'ref-card';
+      div.innerHTML = `<span class="ref-symbol">${card.outline}</span><span class="ref-word">${card.word}</span>`;
+      div.title = `Click to practice ${card.word}`;
+      div.onclick = () => {
+        setMode('game');
+        deck = shuffle(CARDS.filter(c => c.cat === cat));
+        const idx = deck.findIndex(c => c.word === card.word);
+        currentIndex = idx >= 0 ? idx : 0;
+        loadCard();
+      };
+      grid.appendChild(div);
+    });
+    sec.appendChild(grid);
+    container.appendChild(sec);
+  });
+}
+
+// ── MODE SWITCHING ────────────────────────────────────────────
+function setMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', ['game','quiz','reference'][i] === mode);
+  });
+  document.getElementById('game-section').classList.toggle('active', mode === 'game');
+  document.getElementById('quiz-section').classList.toggle('active', mode === 'quiz');
+  document.getElementById('reference-section').classList.toggle('active', mode === 'reference');
+
+  if (mode === 'quiz') { loadQuiz(); }
+  if (mode === 'reference') { buildReference(); }
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+deck = shuffle(CARDS);
+loadCard();
+updateScoreUI();
+</script>
+</body>
+</html>
