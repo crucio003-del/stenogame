@@ -733,6 +733,48 @@
       <div class="exp-header">Why this outline?</div>
       <div class="exp-body" id="quiz-explanation-text"></div>
     </div>
+    <div class="steno-keyboard" style="margin-top:20px;">
+      <h3>Steno Keyboard Layout</h3>
+      <div class="key-rows">
+        <div class="key-row">
+          <div class="key num" style="width:180px;font-size:0.6rem;">NUMBER BAR</div>
+        </div>
+        <div class="key-row">
+          <div class="key quiz-key" data-key="S-">S</div>
+          <div class="key quiz-key" data-key="T-">T</div>
+          <div class="key quiz-key" data-key="K-">K</div>
+          <div class="key quiz-key" data-key="P-">P</div>
+          <div class="key quiz-key" data-key="W-">W</div>
+          <div class="key star quiz-key" data-key="*">✦</div>
+          <div class="key quiz-key" data-key="-F">F</div>
+          <div class="key quiz-key" data-key="-P">P</div>
+          <div class="key quiz-key" data-key="-L">L</div>
+          <div class="key quiz-key" data-key="-T">T</div>
+          <div class="key quiz-key" data-key="-D">D</div>
+        </div>
+        <div class="key-row">
+          <div class="key quiz-key" data-key="S-">S</div>
+          <div class="key quiz-key" data-key="H-">H</div>
+          <div class="key quiz-key" data-key="R-">R</div>
+          <div class="key quiz-key" data-key="W-" style="opacity:0.3">·</div>
+          <div class="key quiz-key" data-key="H-" style="opacity:0.3">·</div>
+          <div class="key star quiz-key" data-key="*">✦</div>
+          <div class="key quiz-key" data-key="-R">R</div>
+          <div class="key quiz-key" data-key="-B">B</div>
+          <div class="key quiz-key" data-key="-G">G</div>
+          <div class="key quiz-key" data-key="-S">S</div>
+          <div class="key quiz-key" data-key="-Z">Z</div>
+        </div>
+        <div class="key-row" style="margin-top:4px;">
+          <div class="key wide quiz-key" data-key="A-">A</div>
+          <div class="key wide quiz-key" data-key="O-">O</div>
+          <div style="width:24px"></div>
+          <div class="key wide quiz-key" data-key="-E">E</div>
+          <div class="key wide quiz-key" data-key="-U">U</div>
+        </div>
+      </div>
+    </div>
+
     <div class="controls" style="margin-top:20px;">
       <button class="btn" onclick="nextQuiz()">Next →</button>
       <button class="btn danger" onclick="resetScore()">Reset Score</button>
@@ -853,16 +895,21 @@ function updateScoreUI() {
   streakEl.style.color = streak >= 5 ? 'var(--red)' : 'var(--ink)';
 }
 
-function highlightKeys(outline) {
-  document.querySelectorAll('.key').forEach(k => k.classList.remove('active'));
+function highlightKeys(outline, selector) {
+  const scope = selector || '[data-key]';
+  document.querySelectorAll(selector ? `${selector} [data-key]` : '[data-key]').forEach(k => k.classList.remove('active'));
+  if (!outline) return;
   const tokens = outline.toUpperCase().split('');
   tokens.forEach(t => {
-    document.querySelectorAll(`[data-key]`).forEach(k => {
+    document.querySelectorAll(selector ? `${selector} [data-key]` : '[data-key]').forEach(k => {
       const kk = k.getAttribute('data-key').toUpperCase().replace('-','');
       if (kk === t) k.classList.add('active');
     });
   });
 }
+
+function highlightFlashcard(outline) { highlightKeys(outline, '#game-section .steno-keyboard'); }
+function highlightQuiz(outline)      { highlightKeys(outline, '#quiz-section .steno-keyboard'); }
 
 // ── GAME MODE ─────────────────────────────────────────────────
 function loadCard() {
@@ -878,7 +925,7 @@ function loadCard() {
   document.getElementById('correct-stamp').classList.remove('show');
   revealed = false;
   updateProgress();
-  highlightKeys('');
+  highlightFlashcard('');
 }
 
 function updateProgress() {
@@ -902,7 +949,7 @@ function checkAnswer() {
     fb.innerHTML = `<span class="feedback-icon">✓</span> Correct! <em>${card.outline}</em> = ${card.word}`;
     stamp.classList.add('show');
     document.getElementById('steno-symbol').textContent = card.outline;
-    highlightKeys(card.outline);
+    highlightFlashcard(card.outline);
     updateScoreUI();
     setTimeout(() => nextCard(), 1200);
   } else {
@@ -930,11 +977,11 @@ function toggleReveal() {
   const sym = document.getElementById('steno-symbol');
   if (!revealed) {
     sym.textContent = card.outline;
-    highlightKeys(card.outline);
+    highlightFlashcard(card.outline);
     revealed = true;
   } else {
     sym.textContent = '?';
-    highlightKeys('');
+    highlightFlashcard('');
     revealed = false;
   }
 }
@@ -983,6 +1030,7 @@ function renderQuiz() {
 
   document.getElementById('quiz-explanation').classList.remove('show');
   document.getElementById('quiz-explanation-text').innerHTML = '';
+  highlightQuiz('');
 
   const grid = document.getElementById('quiz-options');
   grid.innerHTML = '';
@@ -1015,12 +1063,14 @@ function selectQuizAnswer(selected, card, btn) {
     btn.classList.add('correct-ans');
     fb.className = 'feedback correct';
     fb.innerHTML = `<span class="feedback-icon">✓</span> Correct! <em>${correct_ans}</em> = ${card.word}`;
+    highlightQuiz(correct_ans);
   } else {
     wrong++;
     streak = 0;
     btn.classList.add('wrong-ans');
     fb.className = 'feedback wrong';
     fb.innerHTML = `<span class="feedback-icon">✗</span> You chose <em>${selected}</em> — the correct outline is <em>${correct_ans}</em>`;
+    highlightQuiz(correct_ans);
     expBox.classList.add('show');
     expText.innerHTML = card.explanation || `<em>${correct_ans}</em> is the correct steno outline for "${card.word}".`;
   }
